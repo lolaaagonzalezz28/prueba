@@ -1,0 +1,257 @@
+/* ---------------- RESET ---------------- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #ffffff;
+  color: #000000;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+}
+
+/* ---------------- TIPOGRAFÍA ---------------- */
+h1, h2, h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 1.4rem;
+  margin-bottom: 12px;
+}
+
+/* ---------------- TOP BAR ---------------- */
+.top-bar {
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  border-bottom: 1px solid #eaeaea;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: flex-end;
+  z-index: 10;
+}
+
+.coins {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+/* ---------------- MAIN ---------------- */
+main {
+  padding: 16px;
+  padding-bottom: 110px; /* espacio para la nav */
+}
+
+/* ---------------- MOTIVACIÓN ---------------- */
+.motivation {
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  color: #444;
+  border-top: 1px solid #eee;
+  margin-bottom: 70px;
+}
+
+/* ---------------- BOTTOM NAV ---------------- */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: #ffffff;
+  border-top: 1px solid #eaeaea;
+  display: flex;
+  height: 70px;
+}
+
+.bottom-nav button {
+  flex: 1;
+  border: none;
+  background: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #9a9a9a;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.bottom-nav button .icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #cfcfcf;
+  margin-bottom: 4px;
+}
+
+.bottom-nav button.active {
+  color: #000;
+}
+
+.bottom-nav button.active .icon {
+  background: #000;
+}
+
+/* ---------------- SECCIONES ---------------- */
+.section {
+  margin-bottom: 24px;
+}
+
+/* ---------------- PERSONAJE ---------------- */
+.character-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 160px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.life-bar-container {
+  width: 100%;
+  max-width: 220px;
+}
+
+.life-text {
+  font-size: 0.85rem;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.life-bar {
+  width: 100%;
+  height: 10px;
+  background: #eee;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.life-bar-fill {
+  height: 100%;
+  background: #000;
+  width: 100%;
+}
+
+/* ---------------- BOTONES ---------------- */
+.button {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #000;
+  color: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.button.secondary {
+  background: #f2f2f2;
+  color: #000;
+}
+
+/* ---------------- HÁBITOS ---------------- */
+.habit {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.habit.good {
+  border-left: 4px solid #000;
+}
+
+.habit.bad {
+  border-left: 4px solid #999;
+}
+
+.habit-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.habit-info {
+  font-size: 0.8rem;
+  color: #555;
+}
+
+/* ---------------- ASPECTOS ---------------- */
+.aspect {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.aspect-level {
+  font-size: 0.85rem;
+  color: #444;
+}
+
+/* ---------------- LOGROS ---------------- */
+.achievement {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.achievement.locked {
+  opacity: 0.4;
+}
+
+.achievement.completed {
+  border-color: #000;
+}
+
+.achievement-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+/* ---------------- MODAL ---------------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: #fff;
+  width: 90%;
+  max-width: 420px;
+  border-radius: 14px;
+  padding: 20px;
+  position: relative;
+}
+
+.close-modal {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: none;
+  background: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* ---------------- UTIL ---------------- */
+.center {
+  text-align: center;
+}
