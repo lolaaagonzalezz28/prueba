@@ -255,3 +255,32 @@ main {
 .center {
   text-align: center;
 }
+.avatar-stack {
+  position: relative;
+  width: 180px;
+  height: 240px;
+}
+
+.avatar-stack img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+.avatar-options {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.avatar-options img {
+  width: 60px;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 2px solid transparent;
+}
+
+.avatar-options img:hover {
+  border-color: black;
+}
