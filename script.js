@@ -25,10 +25,13 @@ let gameData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
   maxLife: 100,
 
   character: {
-    name: "Mi personaje",
-    skinColor: "#FFE0BD",
-    hair: "short"
-  },
+  name: "Mi personaje",
+  skin: "skin1",
+  eyes: "eyes1",
+  hair: "hair1",
+  outfit: "outfit1"
+},
+
 
   aspects: [
     { id: "fisico", name: "Salud Física", level: 1, xp: 0, maxXp: 100 },
@@ -373,6 +376,17 @@ function openModal(html) {
 function closeModal() {
   document.getElementById("modal").classList.add("hidden");
 }
+function renderAvatar() {
+  return `
+    <div class="avatar-stack">
+      <img src="assets/avatar/skin/${gameData.character.skin}.png">
+      <img src="assets/avatar/eyes/${gameData.character.eyes}.png">
+      <img src="assets/avatar/hair/${gameData.character.hair}.png">
+      <img src="assets/avatar/outfit/${gameData.character.outfit}.png">
+    </div>
+  `;
+}
+
 
 /* ===============================
    INIT
