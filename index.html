@@ -1,0 +1,1232 @@
+<!doctype html>
+<html>
+import React, { useState, useEffect } from 'react';
+import { Coins, Home, User, BarChart3, Store, Trophy, X, Plus, Lock, Check, Trash2 } from 'lucide-react';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
+
+const LifeRPGGame = () => {
+  const [activeTab, setActiveTab] = useState('home');
+  const [showModal, setShowModal] = useState(null);
+  const [gameData, setGameData] = useState(null);
+  const [habitForm, setHabitForm] = useState({
+    name: '',
+    type: 'good',
+    difficulty: 1,
+    aspectId: 1
+  });
+  const [aspectForm, setAspectForm] = useState({
+    name: ''
+  });
+  const [selectedAspect, setSelectedAspect] = useState(null);
+
+  // Opciones de personalización
+  const customization = {
+    skinColors: ['#FFE0BD', '#E8B98D', '#C68642', '#8D5524', '#5C3317', '#3D2817'],
+    hairStyles: ['short', 'long', 'curly', 'bald', 'ponytail', 'spiky'],
+    hairColors: ['#2C1B18', '#59432F', '#A6815A', '#F0C587', '#D14C38', '#1C1C1C', '#E6E6E6', '#8A2BE2'],
+    eyeShapes: ['normal', 'round', 'narrow', 'almond'],
+    eyeColors: ['#5A3A22', '#6D8C3C', '#3498DB', '#9B59B6', '#1ABC9C', '#34495E'],
+    genders: ['masculino', 'femenino', 'neutro'],
+    outfits: {
+      base: { name: 'Básico', unlocked: true },
+      sport: { name: 'Deportivo', unlocked: false },
+      elegant: { name: 'Elegante', unlocked: false },
+      casual: { name: 'Casual', unlocked: false }
+    }
+  };
+
+  // Inicializar datos del juego
+  useEffect(() => {
+    const savedData = localStorage.getItem('lifeRPG-v2');
+    if (savedData) {
+      const loaded = JSON.parse(savedData);
+      // Asegurar que stats existe
+      if (!loaded.stats) {
+        loaded.stats = {
+          totalHabitsCompleted: 0,
+          goodHabitsCompleted: 0,
+          badHabitsCompleted: 0
+        };
+      }
+      // Asegurar que lastReset existe
+      if (!loaded.lastReset) {
+        loaded.lastReset = new Date().toDateString();
+      }
+      setGameData(loaded);
+    } else {
+      const initialData = {
+        coins: 50,
+        life: 1000,
+        maxLife: 1000,
+        experience: 0,
+        level: 1,
+        character: {
+          name: 'Mi Personaje',
+          gender: 'neutro',
+          skinColor: '#FFE0BD',
+          hairStyle: 'short',
+          hairColor: '#2C1B18',
+          eyeShape: 'normal',
+          eyeColor: '#5A3A22',
+          outfit: 'base'
+        },
+        aspects: [
+          { id: 1, name: 'Salud Física', level: 1, xp: 0, maxXp: 100 },
+          { id: 2, name: 'Salud Mental', level: 1, xp: 0, maxXp: 100 },
+          { id: 3, name: 'Familia', level: 1, xp: 0, maxXp: 100 },
+          { id: 4, name: 'Amigos', level: 1, xp: 0, maxXp: 100 },
+          { id: 5, name: 'Pareja', level: 1, xp: 0, maxXp: 100 },
+          { id: 6, name: 'Escuela/Trabajo', level: 1, xp: 0, maxXp: 100 }
+        ],
+        habits: [],
+        achievements: [
+          { id: 1, name: 'Primer Hábito', description: 'Completa tu primer hábito', unlocked: false, claimed: false, reward: 10, type: 'coins' },
+          { id: 2, name: 'Outfit Deportivo', description: 'Completa 5 hábitos de Salud Física', unlocked: false, claimed: false, reward: 'sport', type: 'outfit' },
+          { id: 3, name: 'Maestro de Hábitos', description: 'Completa 20 hábitos en total', unlocked: false, claimed: false, reward: 50, type: 'coins' },
+          { id: 4, name: 'Outfit Elegante', description: 'Alcanza nivel 5 en cualquier aspecto', unlocked: false, claimed: false, reward: 'elegant', type: 'outfit' },
+          { id: 5, name: 'Outfit Casual', description: 'Acumula 100 monedas', unlocked: false, claimed: false, reward: 'casual', type: 'outfit' }
+        ],
+        unlockedOutfits: ['base'],
+        shopPermissions: [],
+        challengeOnDeath: 'Hacer 20 flexiones',
+        stats: {
+          totalHabitsCompleted: 0,
+          goodHabitsCompleted: 0,
+          badHabitsCompleted: 0
+        },
+        lastReset: new Date().toDateString()
+      };
+      setGameData(initialData);
+      saveData(initialData);
+    }
+  }, []);
+
+  const saveData = (data) => {
+    localStorage.setItem('lifeRPG-v2', JSON.stringify(data));
+  };
+
+  // Resetear hábitos diariamente
+  useEffect(() => {
+    if (!gameData) return;
+    
+    const today = new Date().toDateString();
+    if (gameData.lastReset !== today) {
+      const updated = {
+        ...gameData,
+        habits: gameData.habits.map(h => ({ ...h, completed: false })),
+        lastReset: today
+      };
+      setGameData(updated);
+      saveData(updated);
+    }
+  }, [gameData]);
+
+  // Lógica para completar hábito
+  const completeHabit = (habitId) => {
+    const habit = gameData.habits.find(h => h.id === habitId);
+    if (!habit || habit.completed) return;
+
+    let updatedData = { ...gameData };
+    
+    // Marcar hábito como completado
+    updatedData.habits = updatedData.habits.map(h => 
+      h.id === habitId ? { ...h, completed: true } : h
+    );
+
+    // Calcular recompensas/penalizaciones
+    if (habit.type === 'good') {
+      // Hábitos buenos dan monedas y XP
+      updatedData.coins += habit.difficulty * 5;
+      updatedData.experience += habit.difficulty * 10;
+      updatedData.stats.goodHabitsCompleted += 1;
+      
+      // Subir XP del aspecto
+      updatedData.aspects = updatedData.aspects.map(a => {
+        if (a.id === habit.aspectId) {
+          let newXp = a.xp + (habit.difficulty * 20);
+          let newLevel = a.level;
+          let maxXp = a.maxXp;
+          
+          // Subir de nivel si es necesario
+          while (newXp >= maxXp) {
+            newXp -= maxXp;
+            newLevel += 1;
+            maxXp = Math.floor(maxXp * 1.5);
+          }
+          
+          return { ...a, xp: newXp, level: newLevel, maxXp };
+        }
+        return a;
+      });
+    } else {
+      // Hábitos malos quitan vida (si no tienes permiso)
+      const hasPermission = updatedData.shopPermissions.includes(habitId);
+      if (!hasPermission) {
+        updatedData.life = Math.max(0, updatedData.life - (habit.difficulty * 10));
+      }
+      updatedData.stats.badHabitsCompleted += 1;
+    }
+
+    // Actualizar stats totales
+    updatedData.stats.totalHabitsCompleted += 1;
+
+    // Subir nivel general
+    const levelThreshold = updatedData.level * 100;
+    if (updatedData.experience >= levelThreshold) {
+      updatedData.level += 1;
+      updatedData.experience = updatedData.experience - levelThreshold;
+    }
+
+    // Verificar logros
+    updatedData = checkAchievements(updatedData);
+
+    setGameData(updatedData);
+    saveData(updatedData);
+  };
+
+  // Verificar y desbloquear logros
+  const checkAchievements = (data) => {
+    const updated = { ...data };
+    
+    updated.achievements = updated.achievements.map(ach => {
+      if (ach.unlocked) return ach;
+
+      let shouldUnlock = false;
+
+      switch (ach.id) {
+        case 1: // Primer hábito
+          shouldUnlock = data.stats.totalHabitsCompleted >= 1;
+          break;
+        case 2: // Outfit deportivo - 5 hábitos de salud física
+          const healthAspect = data.aspects.find(a => a.name === 'Salud Física');
+          const healthHabits = data.habits.filter(h => h.aspectId === healthAspect?.id && h.completed);
+          shouldUnlock = healthHabits.length >= 5;
+          break;
+        case 3: // Maestro de hábitos - 20 hábitos totales
+          shouldUnlock = data.stats.totalHabitsCompleted >= 20;
+          break;
+        case 4: // Outfit elegante - nivel 5 en cualquier aspecto
+          shouldUnlock = data.aspects.some(a => a.level >= 5);
+          break;
+        case 5: // Outfit casual - 100 monedas acumuladas
+          shouldUnlock = data.coins >= 100;
+          break;
+      }
+
+      return { ...ach, unlocked: shouldUnlock };
+    });
+
+    return updated;
+  };
+
+  // Reclamar logro
+  const claimAchievement = (achievementId) => {
+    const achievement = gameData.achievements.find(a => a.id === achievementId);
+    if (!achievement || !achievement.unlocked || achievement.claimed) return;
+
+    let updatedData = { ...gameData };
+
+    // Dar recompensa
+    if (achievement.type === 'coins') {
+      updatedData.coins += achievement.reward;
+    } else if (achievement.type === 'outfit') {
+      if (!updatedData.unlockedOutfits.includes(achievement.reward)) {
+        updatedData.unlockedOutfits.push(achievement.reward);
+      }
+    }
+
+    // Marcar como reclamado
+    updatedData.achievements = updatedData.achievements.map(a =>
+      a.id === achievementId ? { ...a, claimed: true } : a
+    );
+
+    setGameData(updatedData);
+    saveData(updatedData);
+  };
+
+  // Comprar permiso
+  const buyPermission = (habitId, cost) => {
+    if (gameData.coins < cost || gameData.shopPermissions.includes(habitId)) return;
+
+    const updatedData = {
+      ...gameData,
+      coins: gameData.coins - cost,
+      shopPermissions: [...gameData.shopPermissions, habitId]
+    };
+
+    setGameData(updatedData);
+    saveData(updatedData);
+  };
+
+  // Crear nuevo hábito
+  const createHabit = () => {
+    if (!habitForm.name.trim()) return;
+
+    const newHabit = {
+      id: Date.now(),
+      name: habitForm.name,
+      type: habitForm.type,
+      difficulty: habitForm.difficulty,
+      aspectId: habitForm.aspectId,
+      completed: false
+    };
+
+    const updatedData = {
+      ...gameData,
+      habits: [...gameData.habits, newHabit]
+    };
+
+    setGameData(updatedData);
+    saveData(updatedData);
+    setShowModal(null);
+    setHabitForm({ name: '', type: 'good', difficulty: 1, aspectId: 1 });
+  };
+
+  // Eliminar hábito
+  const deleteHabit = (habitId) => {
+    const updatedData = {
+      ...gameData,
+      habits: gameData.habits.filter(h => h.id !== habitId)
+    };
+
+    setGameData(updatedData);
+    saveData(updatedData);
+  };
+
+  // Crear nuevo aspecto
+  const createAspect = () => {
+    if (!aspectForm.name.trim()) return;
+
+    const newAspect = {
+      id: Date.now(),
+      name: aspectForm.name,
+      level: 1,
+      xp: 0,
+      maxXp: 100
+    };
+
+    const updatedData = {
+      ...gameData,
+      aspects: [...gameData.aspects, newAspect]
+    };
+
+    setGameData(updatedData);
+    saveData(updatedData);
+    setShowModal(null);
+    setAspectForm({ name: '' });
+  };
+
+  // Eliminar aspecto
+  const deleteAspect = (aspectId) => {
+    // No permitir eliminar si solo queda un aspecto
+    if (gameData.aspects.length <= 1) {
+      alert('Debes tener al menos un aspecto de vida');
+      return;
+    }
+
+    // Verificar si hay hábitos asociados
+    const hasHabits = gameData.habits.some(h => h.aspectId === aspectId);
+    if (hasHabits) {
+      if (!confirm('Este aspecto tiene hábitos asociados. ¿Estás seguro de eliminarlo? Los hábitos también se eliminarán.')) {
+        return;
+      }
+    }
+
+    const updatedData = {
+      ...gameData,
+      aspects: gameData.aspects.filter(a => a.id !== aspectId),
+      habits: gameData.habits.filter(h => h.aspectId !== aspectId)
+    };
+
+    setGameData(updatedData);
+    saveData(updatedData);
+    setShowModal(null);
+    setSelectedAspect(null);
+  };
+
+  // Editar nombre de aspecto
+  const editAspectName = (aspectId, newName) => {
+    if (!newName.trim()) return;
+
+    const updatedData = {
+      ...gameData,
+      aspects: gameData.aspects.map(a =>
+        a.id === aspectId ? { ...a, name: newName } : a
+      )
+    };
+
+    setGameData(updatedData);
+    saveData(updatedData);
+    setShowModal(null);
+    setSelectedAspect(null);
+  };
+
+  // Componente Avatar mejorado
+  const Avatar = ({ character, size = 200 }) => {
+    const { skinColor, hairStyle, hairColor, eyeShape, eyeColor, outfit, gender } = character;
+
+    // Estilos de pelo
+    const getHairPath = () => {
+      switch(hairStyle) {
+        case 'short':
+          return <path d="M50,20 Q30,15 25,35 Q20,30 20,40 L80,40 Q80,30 75,35 Q70,15 50,20" fill={hairColor} />;
+        case 'long':
+          return <g><path d="M50,20 Q30,15 25,35 Q20,30 20,40 L20,70 Q20,75 25,75 L75,75 Q80,75 80,70 L80,40 Q80,30 75,35 Q70,15 50,20" fill={hairColor} /></g>;
+        case 'curly':
+          return <g><circle cx="30" cy="30" r="12" fill={hairColor} /><circle cx="50" cy="25" r="12" fill={hairColor} /><circle cx="70" cy="30" r="12" fill={hairColor} /><path d="M20,40 L80,40 L80,45 L20,45 Z" fill={hairColor} /></g>;
+        case 'bald':
+          return null;
+        case 'ponytail':
+          return <g><path d="M50,20 Q30,15 25,35 Q20,30 20,40 L80,40 Q80,30 75,35 Q70,15 50,20" fill={hairColor} /><ellipse cx="85" cy="45" rx="8" ry="20" fill={hairColor} /></g>;
+        case 'spiky':
+          return <g><path d="M35,25 L30,15 L30,35" fill={hairColor} /><path d="M50,20 L50,10 L50,30" fill={hairColor} /><path d="M65,25 L70,15 L70,35" fill={hairColor} /><path d="M20,40 L80,40 L80,45 L20,45 Z" fill={hairColor} /></g>;
+        default:
+          return null;
+      }
+    };
+
+    // Formas de ojos
+    const getEyes = () => {
+      switch(eyeShape) {
+        case 'round':
+          return <g><circle cx="40" cy="50" r="4" fill={eyeColor} /><circle cx="60" cy="50" r="4" fill={eyeColor} /></g>;
+        case 'narrow':
+          return <g><ellipse cx="40" cy="50" rx="5" ry="2" fill={eyeColor} /><ellipse cx="60" cy="50" rx="5" ry="2" fill={eyeColor} /></g>;
+        case 'almond':
+          return <g><ellipse cx="40" cy="50" rx="4" ry="3" fill={eyeColor} /><ellipse cx="60" cy="50" rx="4" ry="3" fill={eyeColor} /></g>;
+        default:
+          return <g><circle cx="40" cy="50" r="3" fill={eyeColor} /><circle cx="60" cy="50" r="3" fill={eyeColor} /></g>;
+      }
+    };
+
+    // Outfit
+    const getOutfit = () => {
+      switch(outfit) {
+        case 'sport':
+          return <g><rect x="25" y="70" width="50" height="40" fill="#FF6B6B" rx="5" /><rect x="25" y="110" width="20" height="50" fill="#4ECDC4" rx="3" /><rect x="55" y="110" width="20" height="50" fill="#4ECDC4" rx="3" /></g>;
+        case 'elegant':
+          return <g><path d="M35,70 L30,90 L30,160 L40,160 L40,110 L60,110 L60,160 L70,160 L70,90 L65,70 Z" fill="#2C3E50" /><rect x="30" y="65" width="40" height="8" fill="#ECF0F1" /></g>;
+        case 'casual':
+          return <g><rect x="25" y="70" width="50" height="30" fill="#3498DB" rx="5" /><rect x="25" y="100" width="20" height="60" fill="#2C3E50" rx="3" /><rect x="55" y="100" width="20" height="60" fill="#2C3E50" rx="3" /></g>;
+        default:
+          return <g><rect x="25" y="70" width="50" height="40" fill="#95A5A6" rx="5" /><rect x="25" y="110" width="20" height="50" fill="#7F8C8D" rx="3" /><rect x="55" y="110" width="20" height="50" fill="#7F8C8D" rx="3" /></g>;
+      }
+    };
+
+    return (
+      <svg viewBox="0 0 100 170" style={{ width: size, height: size * 1.7, margin: '0 auto', display: 'block' }}>
+        {/* Cuerpo y ropa */}
+        {getOutfit()}
+        
+        {/* Cuello */}
+        <rect x="42" y="60" width="16" height="12" fill={skinColor} />
+        
+        {/* Cabeza */}
+        <ellipse cx="50" cy="45" rx="22" ry="25" fill={skinColor} />
+        
+        {/* Pelo */}
+        {getHairPath()}
+        
+        {/* Ojos */}
+        {getEyes()}
+        
+        {/* Nariz */}
+        <line x1="50" y1="52" x2="50" y2="58" stroke={skinColor} strokeWidth="1.5" filter="brightness(0.8)" />
+        
+        {/* Boca */}
+        <path d="M45,62 Q50,65 55,62" stroke="#000" strokeWidth="1.5" fill="none" opacity="0.6" />
+        
+        {/* Brazos */}
+        <rect x="15" y="75" width="10" height="35" fill={skinColor} rx="5" />
+        <rect x="75" y="75" width="10" height="35" fill={skinColor} rx="5" />
+      </svg>
+    );
+  };
+
+  // Modal de edición de personaje
+  const CharacterEditor = () => {
+    const [tempChar, setTempChar] = useState({...gameData.character});
+
+    const updateChar = (key, value) => {
+      setTempChar({...tempChar, [key]: value});
+    };
+
+    const saveCharacter = () => {
+      const updated = {...gameData, character: tempChar};
+      setGameData(updated);
+      saveData(updated);
+      setShowModal(null);
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Editar Personaje</h3>
+            <button onClick={() => setShowModal(null)} className="text-gray-500 hover:text-gray-700">
+              <X size={24} />
+            </button>
+          </div>
+
+          <div className="mb-6">
+            <Avatar character={tempChar} size={150} />
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block font-semibold mb-2">Nombre</label>
+              <input 
+                type="text" 
+                value={tempChar.name}
+                onChange={(e) => updateChar('name', e.target.value)}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2">Género</label>
+              <div className="grid grid-cols-3 gap-2">
+                {customization.genders.map(g => (
+                  <button
+                    key={g}
+                    onClick={() => updateChar('gender', g)}
+                    className={`px-3 py-2 rounded ${tempChar.gender === g ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2">Color de Piel</label>
+              <div className="grid grid-cols-6 gap-2">
+                {customization.skinColors.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => updateChar('skinColor', color)}
+                    className={`w-10 h-10 rounded-full border-2 ${tempChar.skinColor === color ? 'border-blue-500 scale-110' : 'border-gray-300'}`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2">Estilo de Pelo</label>
+              <div className="grid grid-cols-3 gap-2">
+                {customization.hairStyles.map(style => (
+                  <button
+                    key={style}
+                    onClick={() => updateChar('hairStyle', style)}
+                    className={`px-3 py-2 rounded capitalize ${tempChar.hairStyle === style ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  >
+                    {style}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2">Color de Pelo</label>
+              <div className="grid grid-cols-6 gap-2">
+                {customization.hairColors.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => updateChar('hairColor', color)}
+                    className={`w-10 h-10 rounded-full border-2 ${tempChar.hairColor === color ? 'border-blue-500 scale-110' : 'border-gray-300'}`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2">Forma de Ojos</label>
+              <div className="grid grid-cols-2 gap-2">
+                {customization.eyeShapes.map(shape => (
+                  <button
+                    key={shape}
+                    onClick={() => updateChar('eyeShape', shape)}
+                    className={`px-3 py-2 rounded capitalize ${tempChar.eyeShape === shape ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  >
+                    {shape}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2">Color de Ojos</label>
+              <div className="grid grid-cols-6 gap-2">
+                {customization.eyeColors.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => updateChar('eyeColor', color)}
+                    className={`w-10 h-10 rounded-full border-2 ${tempChar.eyeColor === color ? 'border-blue-500 scale-110' : 'border-gray-300'}`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2">Outfit</label>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(customization.outfits).map(([key, {name, unlocked}]) => (
+                  gameData.unlockedOutfits.includes(key) ? (
+                    <button
+                      key={key}
+                      onClick={() => updateChar('outfit', key)}
+                      className={`px-3 py-2 rounded ${tempChar.outfit === key ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                    >
+                      {name}
+                    </button>
+                  ) : (
+                    <button
+                      key={key}
+                      disabled
+                      className="px-3 py-2 rounded bg-gray-100 text-gray-400 flex items-center justify-center gap-1"
+                    >
+                      <Lock size={14} /> {name}
+                    </button>
+                  )
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={saveCharacter}
+            className="w-full mt-6 bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600"
+          >
+            Guardar Cambios
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Modal para crear hábito
+  const HabitModal = () => {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Nuevo Hábito</h3>
+            <button onClick={() => setShowModal(null)} className="text-gray-500 hover:text-gray-700">
+              <X size={24} />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block font-semibold mb-2">Nombre del hábito</label>
+              <input
+                type="text"
+                value={habitForm.name}
+                onChange={(e) => setHabitForm({...habitForm, name: e.target.value})}
+                placeholder="Ej: Hacer ejercicio"
+                className="w-full border rounded px-3 py-2"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2">Tipo</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setHabitForm({...habitForm, type: 'good'})}
+                  className={`px-4 py-2 rounded ${habitForm.type === 'good' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
+                >
+                  ✨ Bueno
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHabitForm({...habitForm, type: 'bad'})}
+                  className={`px-4 py-2 rounded ${habitForm.type === 'bad' ? 'bg-red-500 text-white' : 'bg-gray-200'}`}
+                >
+                  ⚠️ Malo
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2">Dificultad: {habitForm.difficulty}</label>
+              <div className="relative py-3">
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={habitForm.difficulty}
+                  onChange={(e) => setHabitForm({...habitForm, difficulty: parseInt(e.target.value)})}
+                  className="w-full"
+                  style={{
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
+                    height: '6px',
+                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((habitForm.difficulty - 1) / 4) * 100}%, #e5e7eb ${((habitForm.difficulty - 1) / 4) * 100}%, #e5e7eb 100%)`,
+                    borderRadius: '3px',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                />
+                <style>{`
+                  input[type="range"]::-webkit-slider-thumb {
+                    -webkit-appearance: none;
+                    appearance: none;
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    background: #3b82f6;
+                    cursor: pointer;
+                    border: 2px solid white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                    margin-top: -6px;
+                  }
+                  input[type="range"]::-moz-range-thumb {
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    background: #3b82f6;
+                    cursor: pointer;
+                    border: 2px solid white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                  }
+                  input[type="range"]::-webkit-slider-runnable-track {
+                    width: 100%;
+                    height: 6px;
+                    cursor: pointer;
+                    border-radius: 3px;
+                  }
+                  input[type="range"]::-moz-range-track {
+                    width: 100%;
+                    height: 6px;
+                    cursor: pointer;
+                    border-radius: 3px;
+                  }
+                `}</style>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 px-1">
+                <span>Fácil (1)</span>
+                <span>Difícil (5)</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2">Aspecto de vida</label>
+              <select
+                value={habitForm.aspectId}
+                onChange={(e) => setHabitForm({...habitForm, aspectId: parseInt(e.target.value)})}
+                className="w-full border rounded px-3 py-2"
+              >
+                {gameData.aspects.map(aspect => (
+                  <option key={aspect.id} value={aspect.id}>{aspect.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={createHabit}
+            className="w-full mt-6 bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600"
+          >
+            Crear Hábito
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Modal para crear aspecto
+  const AspectModal = () => {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Nuevo Aspecto</h3>
+            <button onClick={() => setShowModal(null)} className="text-gray-500 hover:text-gray-700">
+              <X size={24} />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block font-semibold mb-2">Nombre del aspecto</label>
+              <input
+                type="text"
+                value={aspectForm.name}
+                onChange={(e) => setAspectForm({...aspectForm, name: e.target.value})}
+                placeholder="Ej: Hobbies"
+                className="w-full border rounded px-3 py-2"
+                autoFocus
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={createAspect}
+            className="w-full mt-6 bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600"
+          >
+            Crear Aspecto
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Modal para editar aspecto
+  const AspectEditModal = () => {
+    const aspect = gameData.aspects.find(a => a.id === selectedAspect);
+    const [editName, setEditName] = useState(aspect?.name || '');
+
+    if (!aspect) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Editar Aspecto</h3>
+            <button onClick={() => { setShowModal(null); setSelectedAspect(null); }} className="text-gray-500 hover:text-gray-700">
+              <X size={24} />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block font-semibold mb-2">Nombre del aspecto</label>
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                autoFocus
+              />
+            </div>
+
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <div className="text-sm text-gray-600 mb-1">
+                <strong>Nivel actual:</strong> {aspect.level}
+              </div>
+              <div className="text-sm text-gray-600">
+                <strong>XP:</strong> {aspect.xp} / {aspect.maxXp}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2 mt-6">
+            <button
+              type="button"
+              onClick={() => editAspectName(aspect.id, editName)}
+              className="flex-1 bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600"
+            >
+              Guardar
+            </button>
+            <button
+              type="button"
+              onClick={() => deleteAspect(aspect.id)}
+              className="px-6 bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600"
+            >
+              <Trash2 size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (!gameData) return <div className="flex items-center justify-center h-screen">Cargando...</div>;
+
+  return (
+    <div className="max-w-md mx-auto bg-gray-50 min-h-screen pb-20">
+      {/* Top Bar */}
+      <div className="bg-white p-4 shadow-sm flex justify-between items-center sticky top-0 z-10">
+        <h1 className="text-xl font-bold">Life RPG</h1>
+        <div className="flex items-center gap-1 text-yellow-600 font-bold">
+          <Coins size={20} />
+          <span>{gameData.coins}</span>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        {activeTab === 'home' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Hábitos Diarios</h2>
+            {gameData.habits.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500 mb-4">No hay hábitos aún</p>
+                <p className="text-sm text-gray-400">¡Crea tu primer hábito para empezar!</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {gameData.habits.map(habit => {
+                  const aspect = gameData.aspects.find(a => a.id === habit.aspectId);
+                  return (
+                    <div key={habit.id} className="bg-white p-4 rounded-lg shadow-sm">
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex-1">
+                          <div className="font-semibold text-lg">{habit.name}</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xs px-2 py-1 rounded ${habit.type === 'good' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                              {habit.type === 'good' ? '✨ Bueno' : '⚠️ Malo'}
+                            </span>
+                            <span className="text-xs text-gray-500">{aspect?.name}</span>
+                          </div>
+                          <div className="mt-2 flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <div key={i} className={`w-2 h-2 rounded-full ${i < habit.difficulty ? 'bg-yellow-500' : 'bg-gray-200'}`} />
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => completeHabit(habit.id)}
+                            disabled={habit.completed}
+                            className={`p-2 rounded-lg ${habit.completed ? 'bg-gray-200 text-gray-400' : 'bg-green-500 text-white hover:bg-green-600'}`}
+                          >
+                            <Check size={20} />
+                          </button>
+                          <button
+                            onClick={() => deleteHabit(habit.id)}
+                            className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200"
+                          >
+                            <Trash2 size={20} />
+                          </button>
+                        </div>
+                      </div>
+                      {habit.completed && (
+                        <div className="mt-2 text-xs text-green-600 font-semibold">
+                          ✓ Completado hoy
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <button 
+              onClick={() => setShowModal('newHabit')}
+              className="w-full mt-4 bg-blue-500 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-blue-600"
+            >
+              <Plus size={20} /> Nuevo Hábito
+            </button>
+
+            <div className="mt-8 bg-white p-4 rounded-lg shadow-sm">
+              <h3 className="font-bold mb-2">📊 Estadísticas</h3>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-blue-600">{gameData.stats.totalHabitsCompleted}</div>
+                  <div className="text-xs text-gray-500">Total</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-600">{gameData.stats.goodHabitsCompleted}</div>
+                  <div className="text-xs text-gray-500">Buenos</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-red-600">{gameData.stats.badHabitsCompleted}</div>
+                  <div className="text-xs text-gray-500">Malos</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'character' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4 text-center">{gameData.character.name}</h2>
+            <div className="bg-white rounded-lg p-6 shadow-sm mb-4">
+              <Avatar character={gameData.character} size={200} />
+              <button 
+                onClick={() => setShowModal('editChar')}
+                className="w-full mt-4 bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600"
+              >
+                Editar Apariencia
+              </button>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-semibold">❤️ Vida</span>
+                <span className="font-bold">{gameData.life}/{gameData.maxLife}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-red-500 to-pink-500 h-full transition-all duration-500"
+                  style={{ width: `${(gameData.life / gameData.maxLife) * 100}%` }}
+                />
+              </div>
+              {gameData.life === 0 && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 font-semibold text-sm">⚠️ ¡Vida en 0!</p>
+                  <p className="text-red-600 text-xs mt-1">Reto: {gameData.challengeOnDeath}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-semibold">⭐ Nivel {gameData.level}</span>
+                <span className="text-sm text-gray-500">{gameData.experience} / {gameData.level * 100} XP</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-purple-500 to-blue-500 h-full transition-all duration-500"
+                  style={{ width: `${(gameData.experience / (gameData.level * 100)) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <h3 className="font-bold mb-4 text-center">📊 Gráfico Radar de Aspectos</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <RadarChart data={gameData.aspects.map(a => ({ subject: a.name, value: a.level }))}>
+                  <PolarGrid stroke="#e5e7eb" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 10]} />
+                  <Radar name="Nivel" dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'aspects' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Aspectos de Vida</h2>
+            <div className="space-y-3">
+              {gameData.aspects.map(aspect => {
+                const progress = (aspect.xp / aspect.maxXp) * 100;
+                return (
+                  <div key={aspect.id} className="bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <span className="font-semibold">{aspect.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-bold">
+                          Nivel {aspect.level}
+                        </span>
+                        <button
+                          onClick={() => {
+                            setSelectedAspect(aspect.id);
+                            setShowModal('editAspect');
+                          }}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          ⚙️
+                        </button>
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                      <div 
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-500"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-xs text-gray-500">{aspect.xp} / {aspect.maxXp} XP</span>
+                      <span className="text-xs font-semibold text-purple-600">{Math.floor(progress)}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button 
+              onClick={() => setShowModal('newAspect')}
+              className="w-full mt-4 bg-blue-500 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-blue-600"
+            >
+              <Plus size={20} /> Nuevo Aspecto
+            </button>
+
+            <div className="mt-6 bg-white rounded-lg p-4 shadow-sm">
+              <h3 className="font-bold mb-3 text-center">📊 Vista Radar</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <RadarChart data={gameData.aspects.map(a => ({ 
+                  subject: a.name.length > 12 ? a.name.substring(0, 12) + '...' : a.name, 
+                  value: a.level,
+                  fullMax: 10
+                }))}>
+                  <PolarGrid stroke="#e5e7eb" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 10]} tick={{ fontSize: 10 }} />
+                  <Radar name="Nivel" dataKey="value" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'shop' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Tienda de Permisos</h2>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-blue-800">
+                💡 Los permisos te permiten hacer hábitos malos sin perder vida. Cada permiso cuesta monedas y es permanente.
+              </p>
+            </div>
+
+            {gameData.habits.filter(h => h.type === 'bad').length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500 mb-2">No tienes hábitos malos</p>
+                <p className="text-sm text-gray-400">Crea un hábito malo para ver permisos aquí</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {gameData.habits.filter(h => h.type === 'bad').map(habit => {
+                  const cost = 30 + (habit.difficulty * 20);
+                  const hasPurchased = gameData.shopPermissions.includes(habit.id);
+                  const canAfford = gameData.coins >= cost;
+
+                  return (
+                    <div key={habit.id} className="bg-white p-4 rounded-lg shadow-sm">
+                      <div className="flex justify-between items-center">
+                        <div className="flex-1">
+                          <div className="font-semibold">Permiso: {habit.name}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Dificultad: {[...Array(5)].map((_, i) => i < habit.difficulty ? '⭐' : '☆').join('')}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => buyPermission(habit.id, cost)}
+                          disabled={hasPurchased || !canAfford}
+                          className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-1 ${
+                            hasPurchased 
+                              ? 'bg-green-100 text-green-700' 
+                              : canAfford
+                                ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                                : 'bg-gray-200 text-gray-400'
+                          }`}
+                        >
+                          {hasPurchased ? (
+                            <>✓ Comprado</>
+                          ) : (
+                            <>
+                              <Coins size={16} />
+                              {cost}
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'achievements' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Logros</h2>
+            <div className="space-y-2">
+              {gameData.achievements.map(ach => {
+                const isVisible = ach.unlocked || !ach.secret;
+                if (!isVisible) return null;
+
+                return (
+                  <div 
+                    key={ach.id} 
+                    className={`bg-white p-4 rounded-lg shadow-sm transition-all ${
+                      !ach.unlocked ? 'opacity-60' : ''
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-1">
+                        {ach.claimed ? (
+                          <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                            <Check className="text-green-600" size={24} />
+                          </div>
+                        ) : ach.unlocked ? (
+                          <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                            <Trophy className="text-yellow-600" size={24} />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                            <Lock className="text-gray-400" size={24} />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex-1">
+                        <div className="font-bold">{ach.name}</div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          {ach.unlocked ? ach.description : '???'}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-2">
+                          Recompensa: {ach.type === 'coins' ? `${ach.reward} monedas` : `Outfit ${ach.reward}`}
+                        </div>
+                      </div>
+
+                      {ach.unlocked && !ach.claimed && (
+                        <button
+                          onClick={() => claimAchievement(ach.id)}
+                          className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-600 flex-shrink-0"
+                        >
+                          Reclamar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
+              <h3 className="font-bold mb-2">🎯 Progreso de Logros</h3>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-700">Desbloqueados</span>
+                <span className="font-bold text-purple-700">
+                  {gameData.achievements.filter(a => a.unlocked).length} / {gameData.achievements.length}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-2 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-purple-500 to-blue-500 h-full transition-all"
+                  style={{ 
+                    width: `${(gameData.achievements.filter(a => a.unlocked).length / gameData.achievements.length) * 100}%` 
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
+        <div className="max-w-md mx-auto flex justify-around py-2">
+          {[
+            { id: 'home', icon: Home, label: 'Inicio' },
+            { id: 'character', icon: User, label: 'Personaje' },
+            { id: 'aspects', icon: BarChart3, label: 'Aspectos' },
+            { id: 'shop', icon: Store, label: 'Tienda' },
+            { id: 'achievements', icon: Trophy, label: 'Logros' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex flex-col items-center gap-1 px-4 py-2 ${activeTab === tab.id ? 'text-blue-500' : 'text-gray-500'}`}
+            >
+              <tab.icon size={24} />
+              <span className="text-xs">{tab.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Modals */}
+      {showModal === 'editChar' && <CharacterEditor />}
+      {showModal === 'newHabit' && <HabitModal />}
+      {showModal === 'newAspect' && <AspectModal />}
+      {showModal === 'editAspect' && <AspectEditModal />}
+    </div>
+  );
+};
+export default LifeRPGGame;
+</html>
+</!doctype html>
