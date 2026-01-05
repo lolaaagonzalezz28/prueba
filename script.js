@@ -394,3 +394,37 @@ function renderAvatar() {
 
 setTab("home");
 render();
+function openEditCharacter() {
+  openModal(`
+    <h2>Editar personaje</h2>
+
+    <h3>Piel</h3>
+    ${avatarOptions("skin", ["skin1","skin2"])}
+
+    <h3>Ojos</h3>
+    ${avatarOptions("eyes", ["eyes1","eyes2"])}
+
+    <h3>Pelo</h3>
+    ${avatarOptions("hair", ["hair1","hair2"])}
+
+    <h3>Ropa</h3>
+    ${avatarOptions("outfit", ["outfit1","outfit2"])}
+  `);
+}
+
+function avatarOptions(type, list) {
+  return `
+    <div class="avatar-options">
+      ${list.map(opt => `
+        <img src="assets/avatar/${type}/${opt}.png"
+          onclick="selectAvatarOption('${type}','${opt}')">
+      `).join("")}
+    </div>
+  `;
+}
+
+function selectAvatarOption(type, value) {
+  gameData.character[type] = value;
+  saveGame();
+  render();
+}
