@@ -2,104 +2,224 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Life RPG</title>
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- CSS -->
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-  <!-- ===============================
-       HEADER SUPERIOR
-  ================================ -->
+  <!-- ================= HEADER ================= -->
   <header class="top-bar">
-    <div class="life-indicator">
-      ❤️ <span id="life">100</span>
+    <div class="stat">
+      ❤️ Vida: <span id="life">1000</span>
     </div>
 
-    <div class="coins-indicator">
-      🪙 <span id="coins">0</span>
+    <div class="stat">
+      🪙 Monedas: <span id="coins">0</span>
     </div>
   </header>
 
-  <!-- ===============================
-       CONTENIDO PRINCIPAL
-  ================================ -->
-  <main id="app">
-    <!-- ACÁ EL JS RENDERIZA TODO -->
-  </main>
-
-  <!-- ===============================
-       FRASE MOTIVACIONAL
-  ================================ -->
-  <div class="motivation">
-    <p id="motivationText"></p>
-  </div>
-
-  <!-- ===============================
-       MODAL GLOBAL
-  ================================ -->
-  <div id="modal" class="modal hidden">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal()">✕</button>
-      <div id="modalBody"></div>
+  <!-- ================= XP GENERAL ================= -->
+  <section class="xp-section">
+    <div class="xp-label">
+      Nivel <span id="level">1</span>
     </div>
-  </div>
-
-  <!-- ===============================
-       RADAR DE ASPECTOS
-  ================================ -->
-  <!-- (aunque se muestre solo en la pestaña Aspectos,
-       el canvas DEBE existir siempre) -->
-  <section id="aspectsRadar" class="hidden">
-    <canvas id="radar" width="240" height="240"></canvas>
+    <div class="xp-bar-container">
+      <div id="xpBar" class="xp-bar"></div>
+    </div>
   </section>
 
-  <!-- ===============================
-       ANIMACIÓN DE PERMISO
-  ================================ -->
-  <div id="permissionAnimation" class="permission-animation hidden">
-    ✨ Permiso usado
-  </div>
+  <!-- ================= FRASE MOTIVACIONAL ================= -->
+  <section class="motivation">
+    <p id="motivationText"></p>
+  </section>
 
-  <!-- ===============================
-       NAV INFERIOR MOBILE
-  ================================ -->
+  <!-- ================= CONTENIDO PRINCIPAL ================= -->
+  <main id="app">
+
+    <!-- ---------- HOME / HÁBITOS ---------- -->
+    <section id="tab-home" class="tab active">
+      <h2>Hábitos diarios</h2>
+
+      <div id="habitsList"></div>
+
+      <button class="primary-btn" onclick="openHabitModal()">
+        ➕ Agregar hábito
+      </button>
+    </section>
+
+    <!-- ---------- PERSONAJE ---------- -->
+    <section id="tab-character" class="tab">
+      <h2 id="characterName">Personaje</h2>
+
+      <div class="character-container">
+
+        <!-- Avatar -->
+        <div class="avatar-wrapper">
+          <div id="avatar" class="avatar"></div>
+        </div>
+
+        <!-- Info -->
+        <div class="character-info">
+          <p>Género: <span id="charGender"></span></p>
+          <p>Piel: <span id="charSkin"></span></p>
+          <p>Pelo: <span id="charHair"></span></p>
+          <p>Ojos: <span id="charEyes"></span></p>
+          <p>Outfit: <span id="charOutfit"></span></p>
+        </div>
+
+      </div>
+
+      <button class="primary-btn" onclick="openCharacterEditor()">
+        ✏️ Editar personaje
+      </button>
+    </section>
+
+    <!-- ---------- ASPECTOS ---------- -->
+    <section id="tab-aspects" class="tab">
+      <h2>Aspectos de vida</h2>
+
+      <div id="aspectsList"></div>
+
+      <button class="primary-btn" onclick="openAspectModal()">
+        ➕ Agregar aspecto
+      </button>
+
+      <div class="radar-container">
+        <canvas id="aspectsRadar" width="300" height="300"></canvas>
+      </div>
+    </section>
+
+    <!-- ---------- TIENDA ---------- -->
+    <section id="tab-shop" class="tab">
+      <h2>Tienda</h2>
+
+      <div id="shopItems"></div>
+    </section>
+
+    <!-- ---------- LOGROS ---------- -->
+    <section id="tab-achievements" class="tab">
+      <h2>Logros</h2>
+
+      <div id="achievementsList"></div>
+    </section>
+
+  </main>
+
+  <!-- ================= NAV INFERIOR ================= -->
   <nav class="bottom-nav">
 
     <button onclick="setTab('home')" class="active">
-      <div class="icon icon-habits"></div>
-      <span>Hábitos</span>
+      <span>🏠</span>
+      <small>Hábitos</small>
     </button>
 
     <button onclick="setTab('character')">
-      <div class="icon icon-character"></div>
-      <span>Personaje</span>
+      <span>🧍</span>
+      <small>Personaje</small>
     </button>
 
     <button onclick="setTab('aspects')">
-      <div class="icon icon-aspects"></div>
-      <span>Aspectos</span>
+      <span>📊</span>
+      <small>Aspectos</small>
     </button>
 
     <button onclick="setTab('shop')">
-      <div class="icon icon-shop"></div>
-      <span>Tienda</span>
+      <span>🛒</span>
+      <small>Tienda</small>
     </button>
 
     <button onclick="setTab('achievements')">
-      <div class="icon icon-achievements"></div>
-      <span>Logros</span>
+      <span>🏆</span>
+      <small>Logros</small>
     </button>
 
   </nav>
 
-  <!-- ===============================
-       SCRIPT (SIEMPRE AL FINAL)
-  ================================ -->
+  <!-- ================= MODALES ================= -->
+
+  <!-- Modal genérico -->
+  <div id="modalOverlay" class="modal-overlay hidden">
+    <div id="modalContent" class="modal"></div>
+  </div>
+
+  <!-- Animación permiso -->
+  <div id="permissionAnimation" class="permission-animation hidden">
+    🛡️ Permiso usado
+  </div>
+
+  <!-- Pantalla reto al morir -->
+  <div id="deathChallengeScreen" class="death-screen hidden">
+    <h2>Reto si morís</h2>
+    <p>Elegí un reto difícil para revivir</p>
+
+    <div id="challengeOptions"></div>
+
+    <input
+      id="customChallenge"
+      type="text"
+      placeholder="O escribí tu propio reto"
+    />
+
+    <button class="primary-btn" onclick="saveDeathChallenge()">
+      Guardar reto
+    </button>
+  </div>
+
+  <!-- ================= TEMPLATES ================= -->
+
+  <!-- Hábito -->
+  <template id="habitTemplate">
+    <div class="habit">
+      <div class="habit-info">
+        <h4 class="habit-name"></h4>
+        <small class="habit-aspect"></small>
+      </div>
+
+      <div class="habit-actions">
+        <button class="done">✔</button>
+        <button class="fail">✖</button>
+        <button class="delete">🗑</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- Aspecto -->
+  <template id="aspectTemplate">
+    <div class="aspect">
+      <h4 class="aspect-name"></h4>
+
+      <div class="aspect-xp-bar">
+        <div class="aspect-xp"></div>
+      </div>
+
+      <div class="aspect-actions">
+        <button class="edit">✏️</button>
+        <button class="delete">🗑</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- Item tienda -->
+  <template id="shopItemTemplate">
+    <div class="shop-item locked">
+      <h4 class="shop-name"></h4>
+      <p class="shop-price"></p>
+      <button class="buy">Comprar</button>
+    </div>
+  </template>
+
+  <!-- Logro -->
+  <template id="achievementTemplate">
+    <div class="achievement locked">
+      <span class="achievement-icon">🔒</span>
+      <p class="achievement-title">???</p>
+      <button class="claim hidden">Reclamar</button>
+    </div>
+  </template>
+
+  <!-- ================= SCRIPT ================= -->
   <script src="script.js"></script>
 
 </body>
