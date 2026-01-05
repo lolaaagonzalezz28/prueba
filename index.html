@@ -3,49 +3,104 @@
 <head>
   <meta charset="UTF-8" />
   <title>Life RPG</title>
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- CSS -->
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
-  <!-- HEADER -->
+  <!-- ===============================
+       HEADER SUPERIOR
+  ================================ -->
   <header class="top-bar">
-    <div>❤️ <span id="life">100</span></div>
-    <div>🪙 <span id="coins">0</span></div>
+    <div class="life-indicator">
+      ❤️ <span id="life">100</span>
+    </div>
+
+    <div class="coins-indicator">
+      🪙 <span id="coins">0</span>
+    </div>
   </header>
 
-  <!-- CONTENIDO PRINCIPAL -->
+  <!-- ===============================
+       CONTENIDO PRINCIPAL
+  ================================ -->
   <main id="app">
-    <h2>Hábitos</h2>
-
-    <button onclick="doHabit('workout')">🏋️ Entrenar</button>
-    <button onclick="doHabit('skipGym')">❌ No ir al gym</button>
-    <button onclick="doHabit('junkFood')">🍔 Comer chatarra</button>
-    <button onclick="doHabit('sleepLate')">🌙 Dormir tarde</button>
+    <!-- ACÁ EL JS RENDERIZA TODO -->
   </main>
 
-  <!-- ASPECTOS -->
-  <section class="aspects">
-    <h3>Aspectos de vida</h3>
-    <canvas id="radar" width="200" height="200"></canvas>
+  <!-- ===============================
+       FRASE MOTIVACIONAL
+  ================================ -->
+  <div class="motivation">
+    <p id="motivationText"></p>
+  </div>
+
+  <!-- ===============================
+       MODAL GLOBAL
+  ================================ -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- ===============================
+       RADAR DE ASPECTOS
+  ================================ -->
+  <!-- (aunque se muestre solo en la pestaña Aspectos,
+       el canvas DEBE existir siempre) -->
+  <section id="aspectsRadar" class="hidden">
+    <canvas id="radar" width="240" height="240"></canvas>
   </section>
 
-  <!-- ANIMACIÓN PERMISO -->
-  <div id="permissionAnimation">
+  <!-- ===============================
+       ANIMACIÓN DE PERMISO
+  ================================ -->
+  <div id="permissionAnimation" class="permission-animation hidden">
     ✨ Permiso usado
   </div>
 
-  <!-- NAV INFERIOR -->
+  <!-- ===============================
+       NAV INFERIOR MOBILE
+  ================================ -->
   <nav class="bottom-nav">
-    <button>Hábitos</button>
-    <button>Personaje</button>
-    <button>Aspectos</button>
-    <button>Tienda</button>
-    <button>Logros</button>
+
+    <button onclick="setTab('home')" class="active">
+      <div class="icon icon-habits"></div>
+      <span>Hábitos</span>
+    </button>
+
+    <button onclick="setTab('character')">
+      <div class="icon icon-character"></div>
+      <span>Personaje</span>
+    </button>
+
+    <button onclick="setTab('aspects')">
+      <div class="icon icon-aspects"></div>
+      <span>Aspectos</span>
+    </button>
+
+    <button onclick="setTab('shop')">
+      <div class="icon icon-shop"></div>
+      <span>Tienda</span>
+    </button>
+
+    <button onclick="setTab('achievements')">
+      <div class="icon icon-achievements"></div>
+      <span>Logros</span>
+    </button>
+
   </nav>
 
-  <!-- SCRIPT SIEMPRE AL FINAL -->
+  <!-- ===============================
+       SCRIPT (SIEMPRE AL FINAL)
+  ================================ -->
   <script src="script.js"></script>
+
 </body>
 </html>
