@@ -2,81 +2,50 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <title>Life RPG</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Life RPG</title>
-
-  <!-- CSS -->
   <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
 
-  <!-- ===============================
-       HEADER
-  ================================ -->
+  <!-- HEADER -->
   <header class="top-bar">
-    <div class="coins">
-      🪙 <span id="coins">0</span>
-    </div>
+    <div>❤️ <span id="life">100</span></div>
+    <div>🪙 <span id="coins">0</span></div>
   </header>
 
-  <!-- ===============================
-       APP PRINCIPAL
-       (JS RENDERIZA ACÁ)
-  ================================ -->
-  <main id="app"></main>
+  <!-- CONTENIDO PRINCIPAL -->
+  <main id="app">
+    <h2>Hábitos</h2>
 
-  <!-- ===============================
-       FRASE MOTIVACIONAL
-  ================================ -->
-  <div class="motivation">
-    <p id="motivationText"></p>
+    <button onclick="doHabit('workout')">🏋️ Entrenar</button>
+    <button onclick="doHabit('skipGym')">❌ No ir al gym</button>
+    <button onclick="doHabit('junkFood')">🍔 Comer chatarra</button>
+    <button onclick="doHabit('sleepLate')">🌙 Dormir tarde</button>
+  </main>
+
+  <!-- ASPECTOS -->
+  <section class="aspects">
+    <h3>Aspectos de vida</h3>
+    <canvas id="radar" width="200" height="200"></canvas>
+  </section>
+
+  <!-- ANIMACIÓN PERMISO -->
+  <div id="permissionAnimation">
+    ✨ Permiso usado
   </div>
 
-  <!-- ===============================
-       NAVEGACIÓN INFERIOR
-  ================================ -->
+  <!-- NAV INFERIOR -->
   <nav class="bottom-nav">
-    <button onclick="setTab('home')" class="active">
-      <span class="icon">🏠</span>
-      <span class="label">Hábitos</span>
-    </button>
-
-    <button onclick="setTab('character')">
-      <span class="icon">👤</span>
-      <span class="label">Personaje</span>
-    </button>
-
-    <button onclick="setTab('aspects')">
-      <span class="icon">📊</span>
-      <span class="label">Aspectos</span>
-    </button>
-
-    <button onclick="setTab('shop')">
-      <span class="icon">🛒</span>
-      <span class="label">Tienda</span>
-    </button>
-
-    <button onclick="setTab('achievements')">
-      <span class="icon">🏆</span>
-      <span class="label">Logros</span>
-    </button>
+    <button>Hábitos</button>
+    <button>Personaje</button>
+    <button>Aspectos</button>
+    <button>Tienda</button>
+    <button>Logros</button>
   </nav>
 
-  <!-- ===============================
-       MODAL (GLOBAL)
-  ================================ -->
-  <div id="modal" class="modal hidden">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal()">✕</button>
-      <div id="modalBody"></div>
-    </div>
-  </div>
-
-  <!-- ===============================
-       JS
-  ================================ -->
+  <!-- SCRIPT SIEMPRE AL FINAL -->
   <script src="script.js"></script>
 </body>
 </html>
