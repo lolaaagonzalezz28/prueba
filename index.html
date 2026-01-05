@@ -2,68 +2,81 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Life RPG</title>
 
-  <!-- Tipografía para títulos -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
-
-  <link rel="stylesheet" href="style.css">
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
 
-  <!-- TOP BAR -->
+  <!-- ===============================
+       HEADER
+  ================================ -->
   <header class="top-bar">
     <div class="coins">
-      <span id="coins">0</span> 🪙
+      🪙 <span id="coins">0</span>
     </div>
   </header>
 
-  <!-- MAIN CONTENT -->
-  <main id="app">
-    <!-- El contenido se renderiza desde JS -->
-  </main>
+  <!-- ===============================
+       APP PRINCIPAL
+       (JS RENDERIZA ACÁ)
+  ================================ -->
+  <main id="app"></main>
 
-  <!-- FRASE MOTIVACIONAL -->
-  <section class="motivation">
+  <!-- ===============================
+       FRASE MOTIVACIONAL
+  ================================ -->
+  <div class="motivation">
     <p id="motivationText"></p>
-  </section>
+  </div>
 
-  <!-- BOTTOM NAV -->
+  <!-- ===============================
+       NAVEGACIÓN INFERIOR
+  ================================ -->
   <nav class="bottom-nav">
-    <button onclick="setTab('home')">
-      <div class="icon">●</div>
-      <span>Hábitos</span>
+    <button onclick="setTab('home')" class="active">
+      <span class="icon">🏠</span>
+      <span class="label">Hábitos</span>
     </button>
+
     <button onclick="setTab('character')">
-      <div class="icon">●</div>
-      <span>Personaje</span>
+      <span class="icon">👤</span>
+      <span class="label">Personaje</span>
     </button>
+
     <button onclick="setTab('aspects')">
-      <div class="icon">●</div>
-      <span>Aspectos</span>
+      <span class="icon">📊</span>
+      <span class="label">Aspectos</span>
     </button>
+
     <button onclick="setTab('shop')">
-      <div class="icon">●</div>
-      <span>Tienda</span>
+      <span class="icon">🛒</span>
+      <span class="label">Tienda</span>
     </button>
+
     <button onclick="setTab('achievements')">
-      <div class="icon">●</div>
-      <span>Logros</span>
+      <span class="icon">🏆</span>
+      <span class="label">Logros</span>
     </button>
   </nav>
 
-  <!-- MODAL (reutilizable) -->
+  <!-- ===============================
+       MODAL (GLOBAL)
+  ================================ -->
   <div id="modal" class="modal hidden">
     <div class="modal-content">
-      <button class="close-modal" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()">✕</button>
       <div id="modalBody"></div>
     </div>
   </div>
 
+  <!-- ===============================
+       JS
+  ================================ -->
   <script src="script.js"></script>
 </body>
 </html>
