@@ -1,6 +1,6 @@
 /* ==========================
    LIFE RPG – SCRIPT PRINCIPAL
-   ========================== */
+========================== */
 
 /* ---------- ESTADO DEL JUEGO ---------- */
 
@@ -33,23 +33,23 @@ let gameData = JSON.parse(localStorage.getItem("lifeRPG")) || {
 
   unlocked: {
     outfits: ["basic"],
-    hair: ["long"],
+    hair: ["long"]
   },
 
   stats: {
-    gymMissed: 0,
+    skipGym: 0,
     junkFood: 0,
-    nightsLate: 0,
+    sleepLate: 0,
     workouts: 0
   },
 
   achievements: {},
-
   claimedAchievements: []
 };
 
+let activeTab = "home";
 
-/* ---------- HÁBITOS ---------- */
+/* ---------- DATA ---------- */
 
 const habits = [
   {
@@ -81,79 +81,46 @@ const habits = [
     name: "Entrenar",
     type: "good",
     reward: 10,
-    aspectImpact: { salud: +5, disciplina: +5 }
+    aspectImpact: { salud: 5, disciplina: 5 }
   }
 ];
-
-
-/* ---------- TIENDA (SOLO PERMISOS) ---------- */
 
 const shopItems = [
-  {
-    id: "perm_skipGym",
-    name: "Permiso: faltar al gym",
-    price: 40,
-    permissionKey: "skipGym"
-  },
-  {
-    id: "perm_junkFood",
-    name: "Permiso: comida chatarra",
-    price: 30,
-    permissionKey: "junkFood"
-  },
-  {
-    id: "perm_sleepLate",
-    name: "Permiso: dormir tarde",
-    price: 25,
-    permissionKey: "sleepLate"
-  }
+  { id: "perm_skipGym", name: "Permiso: faltar al gym", price: 40, key: "skipGym" },
+  { id: "perm_junkFood", name: "Permiso: comida chatarra", price: 30, key: "junkFood" },
+  { id: "perm_sleepLate", name: "Permiso: dormir tarde", price: 25, key: "sleepLate" }
 ];
-
-
-/* ---------- LOGROS ---------- */
 
 const achievements = [
   {
     id: "firstWorkout",
     title: "Primer entrenamiento",
+    hidden: false,
     condition: () => gameData.stats.workouts >= 1,
-    reward: { coins: 30 },
-    hidden: false
+    reward: { coins: 30 }
   },
   {
     id: "gymGhost",
     title: "Fantasma del gym",
-    condition: () => gameData.stats.gymMissed >= 3,
-    reward: { outfit: "hoodie" },
-    hidden: true
-  },
-  {
-    id: "junkQueen",
-    title: "Reina del junk",
-    condition: () => gameData.stats.junkFood >= 5,
-    reward: { hair: "short" },
-    hidden: true
-  },
-  {
-    id: "disciplineUp",
-    title: "Disciplina en alza",
-    condition: () => gameData.aspects.disciplina >= 70,
-    reward: { coins: 50 },
-    hidden: false
+    hidden: true,
+    condition: () => gameData.stats.skipGym >= 3,
+    reward: { outfit: "hoodie" }
   }
 ];
+
+/* ---------- NAV ---------- */
 
 function setTab(tab) {
   activeTab = tab;
 
-  const buttons = document.querySelectorAll(".bottom-nav button");
-  buttons.forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".bottom-nav button")
+    .forEach(b => b.classList.remove("active"));
 
   const tabs = ["home", "character", "aspects", "shop", "achievements"];
   const index = tabs.indexOf(tab);
-
-  if (index !== -1 && buttons[index]) {
-    buttons[index].classList.add("active");
+  if (index !== -1) {
+    document.querySelectorAll(".bottom-nav button")[index]
+      .classList.add("active");
   }
 
   render();
@@ -165,15 +132,14 @@ function saveGame() {
   localStorage.setItem("lifeRPG", JSON.stringify(gameData));
 }
 
-
 /* ---------- HÁBITOS ---------- */
 
-function doHabit(habitId) {
-  const habit = habits.find(h => h.id === habitId);
+function doHabit(id) {
+  const habit = habits.find(h => h.id === id);
   if (!habit) return;
 
   if (habit.type === "bad") {
-    gameData.stats[habitId]++;
+    gameData.stats[id]++;
 
     if (gameData.permissions[habit.permissionKey] > 0) {
       gameData.permissions[habit.permissionKey]--;
@@ -195,22 +161,19 @@ function doHabit(habitId) {
   render();
 }
 
-
 /* ---------- ASPECTOS ---------- */
 
 function applyAspectImpact(impact) {
-  for (let key in impact) {
-    gameData.aspects[key] += impact[key];
-    if (gameData.aspects[key] < 0) gameData.aspects[key] = 0;
-    if (gameData.aspects[key] > 100) gameData.aspects[key] = 100;
+  for (let k in impact) {
+    gameData.aspects[k] += impact[k];
+    gameData.aspects[k] = Math.max(0, Math.min(100, gameData.aspects[k]));
   }
 }
 
-
 /* ---------- TIENDA ---------- */
 
-function buyPermission(itemId) {
-  const item = shopItems.find(i => i.id === itemId);
+function buyPermission(id) {
+  const item = shopItems.find(i => i.id === id);
   if (!item) return;
 
   if (gameData.coins < item.price) {
@@ -219,11 +182,10 @@ function buyPermission(itemId) {
   }
 
   gameData.coins -= item.price;
-  gameData.permissions[item.permissionKey]++;
+  gameData.permissions[item.key]++;
   saveGame();
   render();
 }
-
 
 /* ---------- LOGROS ---------- */
 
@@ -236,84 +198,131 @@ function checkAchievements() {
 }
 
 function claimAchievement(id) {
+  if (gameData.claimedAchievements.includes(id)) return;
   const ach = achievements.find(a => a.id === id);
   if (!ach) return;
-  if (gameData.claimedAchievements.includes(id)) return;
 
-  if (ach.reward.coins) {
-    gameData.coins += ach.reward.coins;
-  }
-  if (ach.reward.outfit) {
-    gameData.unlocked.outfits.push(ach.reward.outfit);
-  }
-  if (ach.reward.hair) {
-    gameData.unlocked.hair.push(ach.reward.hair);
-  }
+  if (ach.reward.coins) gameData.coins += ach.reward.coins;
+  if (ach.reward.outfit) gameData.unlocked.outfits.push(ach.reward.outfit);
 
   gameData.claimedAchievements.push(id);
   saveGame();
   render();
 }
 
-
-/* ---------- AVATAR ---------- */
-
-function updateAvatar(key, value) {
-  gameData.avatar[key] = value;
-  saveGame();
-  render();
-}
-
-
-/* ---------- ANIMACIÓN PERMISO ---------- */
+/* ---------- ANIMACIÓN ---------- */
 
 function playPermissionAnimation() {
   const el = document.getElementById("permissionAnimation");
   if (!el) return;
-
   el.classList.add("show");
-  setTimeout(() => el.classList.remove("show"), 900);
+  setTimeout(() => el.classList.remove("show"), 800);
 }
 
-
-/* ---------- RADAR ASPECTOS ---------- */
+/* ---------- RADAR ---------- */
 
 function drawRadar() {
   const canvas = document.getElementById("radar");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
-  const values = Object.values(gameData.aspects);
-  const labels = Object.keys(gameData.aspects);
 
+  const values = Object.values(gameData.aspects);
   const cx = canvas.width / 2;
   const cy = canvas.height / 2;
-  const radius = 80;
+  const r = 80;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.beginPath();
 
   values.forEach((v, i) => {
     const angle = (Math.PI * 2 / values.length) * i - Math.PI / 2;
-    const r = radius * (v / 100);
-    const x = cx + Math.cos(angle) * r;
-    const y = cy + Math.sin(angle) * r;
-
-    ctx.lineTo(x, y);
+    const x = cx + Math.cos(angle) * r * (v / 100);
+    const y = cy + Math.sin(angle) * r * (v / 100);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
   });
 
   ctx.closePath();
-  ctx.fillStyle = "rgba(0,0,0,0.1)";
+  ctx.fillStyle = "rgba(0,0,0,0.15)";
   ctx.fill();
-  ctx.stroke();
 }
 
+/* ---------- RENDERS ---------- */
 
-/* ---------- RENDER ---------- */
+function renderHome() {
+  app.innerHTML = `
+    <h2>Hábitos</h2>
+    ${habits.map(h => `
+      <button class="habit-btn ${h.type}" onclick="doHabit('${h.id}')">
+        ${h.name}
+      </button>
+    `).join("")}
+  `;
+}
+
+function renderCharacter() {
+  app.innerHTML = `
+    <h2>Personaje</h2>
+    <p>Vida: ❤️ ${gameData.life}</p>
+  `;
+}
+
+function renderAspects() {
+  app.innerHTML = `
+    <h2>Aspectos</h2>
+    <canvas id="radar" width="240" height="240"></canvas>
+  `;
+  drawRadar();
+}
+
+function renderShop() {
+  app.innerHTML = `
+    <h2>Tienda</h2>
+    ${shopItems.map(i => `
+      <div class="shop-item">
+        <strong>${i.name}</strong>
+        <button onclick="buyPermission('${i.id}')">
+          Comprar (${i.price}🪙)
+        </button>
+      </div>
+    `).join("")}
+  `;
+}
+
+function renderAchievements() {
+  app.innerHTML = `
+    <h2>Logros</h2>
+    ${achievements.map(a => {
+      if (a.hidden && !gameData.achievements[a.id]) return "";
+      return `
+        <div class="achievement">
+          <strong>${a.title}</strong>
+          ${gameData.achievements[a.id] && !gameData.claimedAchievements.includes(a.id)
+            ? `<button onclick="claimAchievement('${a.id}')">Reclamar</button>`
+            : gameData.claimedAchievements.includes(a.id)
+              ? "<span>Completado</span>"
+              : "<span>Bloqueado</span>"
+          }
+        </div>
+      `;
+    }).join("")}
+  `;
+}
+
+/* ---------- RENDER GENERAL ---------- */
 
 function render() {
+  window.app = document.getElementById("app");
   document.getElementById("life").innerText = gameData.life;
   document.getElementById("coins").innerText = gameData.coins;
 
-  drawRadar();
+  if (activeTab === "home") renderHome();
+  if (activeTab === "character") renderCharacter();
+  if (activeTab === "aspects") renderAspects();
+  if (activeTab === "shop") renderShop();
+  if (activeTab === "achievements") renderAchievements();
 }
+
+/* ---------- INIT ---------- */
 
 render();
