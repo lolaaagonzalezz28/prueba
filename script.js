@@ -143,6 +143,21 @@ const achievements = [
   }
 ];
 
+function setTab(tab) {
+  activeTab = tab;
+
+  const buttons = document.querySelectorAll(".bottom-nav button");
+  buttons.forEach(b => b.classList.remove("active"));
+
+  const tabs = ["home", "character", "aspects", "shop", "achievements"];
+  const index = tabs.indexOf(tab);
+
+  if (index !== -1 && buttons[index]) {
+    buttons[index].classList.add("active");
+  }
+
+  render();
+}
 
 /* ---------- GUARDAR ---------- */
 
