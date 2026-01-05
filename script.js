@@ -1,33 +1,30 @@
-/* ==========================
-   LIFE RPG – SCRIPT PRINCIPAL
-========================== */
+/* =========================
+   LIFE RPG – SCRIPT GENERAL
+   ========================= */
 
-/* ---------- ESTADO DEL JUEGO ---------- */
+/* ---------- ESTADO BASE ---------- */
 
-let gameData = JSON.parse(localStorage.getItem("lifeRPG")) || {
-  life: 100,
+const DEFAULT_GAME = {
+  day: new Date().toDateString(),
+
+  life: 1000,
+  maxLife: 1000,
+
   coins: 0,
 
-  aspects: {
-    salud: 50,
-    disciplina: 40,
-    social: 30,
-    mente: 45,
-    energia: 50
-  },
+  xp: 0,
+  level: 1,
 
-  permissions: {
-    skipGym: 0,
-    junkFood: 0,
-    sleepLate: 0
-  },
+  deathChallenge: "",
 
   avatar: {
+    name: "Mi personaje",
     gender: "fem",
     skin: "light",
     hair: "long",
     hairColor: "brown",
-    eyes: "brown",
+    eyes: "round",
+    eyeColor: "brown",
     outfit: "basic"
   },
 
@@ -36,200 +33,229 @@ let gameData = JSON.parse(localStorage.getItem("lifeRPG")) || {
     hair: ["long"]
   },
 
+  aspects: [
+    { id: "salud", name: "Salud", xp: 0 },
+    { id: "disciplina", name: "Disciplina", xp: 0 },
+    { id: "mente", name: "Mente", xp: 0 },
+    { id: "social", name: "Social", xp: 0 },
+    { id: "energia", name: "Energía", xp: 0 }
+  ],
+
+  habits: [],
+
+  permissions: {},
+
   stats: {
-    skipGym: 0,
-    junkFood: 0,
-    sleepLate: 0,
-    workouts: 0
+    habitsDone: 0,
+    habitsFailed: 0
   },
 
   achievements: {},
   claimedAchievements: []
 };
 
+let game = JSON.parse(localStorage.getItem("lifeRPG")) || structuredClone(DEFAULT_GAME);
 let activeTab = "home";
 
-/* ---------- DATA ---------- */
-
-const habits = [
-  {
-    id: "skipGym",
-    name: "No ir al gym",
-    type: "bad",
-    damage: 15,
-    permissionKey: "skipGym",
-    aspectImpact: { disciplina: -5 }
-  },
-  {
-    id: "junkFood",
-    name: "Comer comida chatarra",
-    type: "bad",
-    damage: 10,
-    permissionKey: "junkFood",
-    aspectImpact: { salud: -5 }
-  },
-  {
-    id: "sleepLate",
-    name: "Dormir tarde",
-    type: "bad",
-    damage: 8,
-    permissionKey: "sleepLate",
-    aspectImpact: { energia: -5 }
-  },
-  {
-    id: "workout",
-    name: "Entrenar",
-    type: "good",
-    reward: 10,
-    aspectImpact: { salud: 5, disciplina: 5 }
-  }
-];
-
-const shopItems = [
-  { id: "perm_skipGym", name: "Permiso: faltar al gym", price: 40, key: "skipGym" },
-  { id: "perm_junkFood", name: "Permiso: comida chatarra", price: 30, key: "junkFood" },
-  { id: "perm_sleepLate", name: "Permiso: dormir tarde", price: 25, key: "sleepLate" }
-];
-
-const achievements = [
-  {
-    id: "firstWorkout",
-    title: "Primer entrenamiento",
-    hidden: false,
-    condition: () => gameData.stats.workouts >= 1,
-    reward: { coins: 30 }
-  },
-  {
-    id: "gymGhost",
-    title: "Fantasma del gym",
-    hidden: true,
-    condition: () => gameData.stats.skipGym >= 3,
-    reward: { outfit: "hoodie" }
-  }
-];
-
-/* ---------- NAV ---------- */
-
-function setTab(tab) {
-  activeTab = tab;
-
-  document.querySelectorAll(".bottom-nav button")
-    .forEach(b => b.classList.remove("active"));
-
-  const tabs = ["home", "character", "aspects", "shop", "achievements"];
-  const index = tabs.indexOf(tab);
-  if (index !== -1) {
-    document.querySelectorAll(".bottom-nav button")[index]
-      .classList.add("active");
-  }
-
-  render();
-}
-
-/* ---------- GUARDAR ---------- */
+/* ---------- UTILIDADES ---------- */
 
 function saveGame() {
-  localStorage.setItem("lifeRPG", JSON.stringify(gameData));
+  localStorage.setItem("lifeRPG", JSON.stringify(game));
+}
+
+function resetDailyIfNeeded() {
+  const today = new Date().toDateString();
+  if (game.day !== today) {
+    game.day = today;
+    game.habits.forEach(h => h.done = null);
+    saveGame();
+  }
+}
+
+/* ---------- EXPERIENCIA ---------- */
+
+function addXP(amount, aspectId = null) {
+  game.xp += amount;
+
+  if (aspectId) {
+    const asp = game.aspects.find(a => a.id === aspectId);
+    if (asp) asp.xp += amount;
+  }
+
+  while (game.xp >= game.level * 100) {
+    game.xp -= game.level * 100;
+    game.level++;
+  }
+}
+
+/* ---------- VIDA ---------- */
+
+function loseLife(amount) {
+  game.life -= amount;
+  if (game.life <= 0) {
+    game.life = 0;
+    handleDeath();
+  }
+}
+
+function handleDeath() {
+  game.coins = Math.floor(game.coins * 0.2);
+  game.xp = Math.max(0, game.xp - game.level * 50);
+  document.getElementById("deathChallengeScreen").classList.remove("hidden");
+  saveGame();
 }
 
 /* ---------- HÁBITOS ---------- */
 
-function doHabit(id) {
-  const habit = habits.find(h => h.id === id);
-  if (!habit) return;
+function addHabit() {
+  const name = prompt("Nombre del hábito:");
+  if (!name) return;
 
-  if (habit.type === "bad") {
-    gameData.stats[id]++;
+  const aspect = prompt("Aspecto (salud, disciplina, mente, social, energia):");
+  const difficulty = Number(prompt("Dificultad 1 a 5:"));
 
-    if (gameData.permissions[habit.permissionKey] > 0) {
-      gameData.permissions[habit.permissionKey]--;
-      playPermissionAnimation();
-    } else {
-      gameData.life -= habit.damage;
-      if (gameData.life < 0) gameData.life = 0;
-    }
+  game.habits.push({
+    id: crypto.randomUUID(),
+    name,
+    aspect,
+    difficulty,
+    done: null
+  });
+
+  saveGame();
+  render();
+}
+
+function markHabit(id, success) {
+  const habit = game.habits.find(h => h.id === id);
+  if (!habit || habit.done !== null) return;
+
+  habit.done = success;
+
+  if (success) {
+    const xpGain = habit.difficulty * 10;
+    game.coins += habit.difficulty * 5;
+    addXP(xpGain, habit.aspect);
+    game.stats.habitsDone++;
+  } else {
+    loseLife(habit.difficulty * 20);
+    game.stats.habitsFailed++;
   }
 
-  if (habit.type === "good") {
-    gameData.coins += habit.reward;
-    gameData.stats.workouts++;
-  }
-
-  applyAspectImpact(habit.aspectImpact);
   checkAchievements();
+  saveGame();
+  render();
+}
+
+function deleteHabit(id) {
+  game.habits = game.habits.filter(h => h.id !== id);
   saveGame();
   render();
 }
 
 /* ---------- ASPECTOS ---------- */
 
-function applyAspectImpact(impact) {
-  for (let k in impact) {
-    gameData.aspects[k] += impact[k];
-    gameData.aspects[k] = Math.max(0, Math.min(100, gameData.aspects[k]));
-  }
+function addAspect() {
+  const name = prompt("Nombre del aspecto:");
+  if (!name) return;
+
+  game.aspects.push({
+    id: crypto.randomUUID(),
+    name,
+    xp: 0
+  });
+
+  saveGame();
+  render();
 }
 
-/* ---------- TIENDA ---------- */
+function deleteAspect(id) {
+  game.aspects = game.aspects.filter(a => a.id !== id);
+  saveGame();
+  render();
+}
+
+/* ---------- TIENDA (PERMISOS) ---------- */
+
+const shopPermissions = [
+  { id: "skipHabit", name: "Permiso: saltar hábito", price: 50 }
+];
 
 function buyPermission(id) {
-  const item = shopItems.find(i => i.id === id);
+  const item = shopPermissions.find(p => p.id === id);
   if (!item) return;
 
-  if (gameData.coins < item.price) {
-    alert("No tenés monedas suficientes");
+  if (game.coins < item.price) {
+    alert("Fondos insuficientes");
     return;
   }
 
-  gameData.coins -= item.price;
-  gameData.permissions[item.key]++;
+  game.coins -= item.price;
+  game.permissions[id] = (game.permissions[id] || 0) + 1;
+
+  playPermissionAnimation();
   saveGame();
   render();
 }
 
 /* ---------- LOGROS ---------- */
 
+const achievements = [
+  {
+    id: "firstHabit",
+    hidden: false,
+    condition: () => game.stats.habitsDone >= 1,
+    reward: { coins: 30 }
+  },
+  {
+    id: "discipline5",
+    hidden: true,
+    condition: () => game.aspects.find(a => a.id === "disciplina")?.xp >= 200,
+    reward: { outfit: "hoodie" }
+  }
+];
+
 function checkAchievements() {
   achievements.forEach(a => {
-    if (!gameData.achievements[a.id] && a.condition()) {
-      gameData.achievements[a.id] = true;
+    if (!game.achievements[a.id] && a.condition()) {
+      game.achievements[a.id] = true;
     }
   });
 }
 
 function claimAchievement(id) {
-  if (gameData.claimedAchievements.includes(id)) return;
+  if (game.claimedAchievements.includes(id)) return;
+
   const ach = achievements.find(a => a.id === id);
   if (!ach) return;
 
-  if (ach.reward.coins) gameData.coins += ach.reward.coins;
-  if (ach.reward.outfit) gameData.unlocked.outfits.push(ach.reward.outfit);
+  if (ach.reward.coins) game.coins += ach.reward.coins;
+  if (ach.reward.outfit) game.unlocked.outfits.push(ach.reward.outfit);
 
-  gameData.claimedAchievements.push(id);
+  game.claimedAchievements.push(id);
   saveGame();
   render();
 }
 
-/* ---------- ANIMACIÓN ---------- */
+/* ---------- AVATAR ---------- */
 
-function playPermissionAnimation() {
-  const el = document.getElementById("permissionAnimation");
-  if (!el) return;
-  el.classList.add("show");
-  setTimeout(() => el.classList.remove("show"), 800);
+function updateAvatar(key, value) {
+  game.avatar[key] = value;
+  saveGame();
+  render();
 }
 
 /* ---------- RADAR ---------- */
 
 function drawRadar() {
-  const canvas = document.getElementById("radar");
+  const canvas = document.getElementById("aspectsRadar");
   if (!canvas) return;
-  const ctx = canvas.getContext("2d");
 
-  const values = Object.values(gameData.aspects);
+  const ctx = canvas.getContext("2d");
+  const values = game.aspects.map(a => Math.min(100, a.xp / 5));
   const cx = canvas.width / 2;
   const cy = canvas.height / 2;
-  const r = 80;
+  const r = 100;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.beginPath();
@@ -238,89 +264,120 @@ function drawRadar() {
     const angle = (Math.PI * 2 / values.length) * i - Math.PI / 2;
     const x = cx + Math.cos(angle) * r * (v / 100);
     const y = cy + Math.sin(angle) * r * (v / 100);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+    ctx.lineTo(x, y);
   });
 
   ctx.closePath();
-  ctx.fillStyle = "rgba(0,0,0,0.15)";
+  ctx.fillStyle = "rgba(123,108,255,0.3)";
   ctx.fill();
 }
 
-/* ---------- RENDERS ---------- */
+/* ---------- NAVEGACIÓN ---------- */
 
-function renderHome() {
-  app.innerHTML = `
-    <h2>Hábitos</h2>
-    ${habits.map(h => `
-      <button class="habit-btn ${h.type}" onclick="doHabit('${h.id}')">
-        ${h.name}
-      </button>
-    `).join("")}
-  `;
+function setTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.getElementById(tab).classList.add("active");
+
+  document.querySelectorAll(".bottom-nav button").forEach(b => b.classList.remove("active"));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add("active");
+
+  render();
 }
 
-function renderCharacter() {
-  app.innerHTML = `
-    <h2>Personaje</h2>
-    <p>Vida: ❤️ ${gameData.life}</p>
-  `;
-}
+/* ---------- RENDER ---------- */
 
-function renderAspects() {
-  app.innerHTML = `
-    <h2>Aspectos</h2>
-    <canvas id="radar" width="240" height="240"></canvas>
-  `;
+function render() {
+  resetDailyIfNeeded();
+
+  document.getElementById("life").innerText = game.life;
+  document.getElementById("coins").innerText = game.coins;
+
+  document.getElementById("xpBar").style.width =
+    Math.min(100, (game.xp / (game.level * 100)) * 100) + "%";
+
+  renderHabits();
+  renderAspects();
+  renderAchievements();
   drawRadar();
 }
 
-function renderShop() {
-  app.innerHTML = `
-    <h2>Tienda</h2>
-    ${shopItems.map(i => `
-      <div class="shop-item">
-        <strong>${i.name}</strong>
-        <button onclick="buyPermission('${i.id}')">
-          Comprar (${i.price}🪙)
-        </button>
+/* ---------- RENDER SECCIONES ---------- */
+
+function renderHabits() {
+  const el = document.getElementById("habitList");
+  if (!el) return;
+  el.innerHTML = "";
+
+  game.habits.forEach(h => {
+    const div = document.createElement("div");
+    div.className = "habit";
+    div.innerHTML = `
+      <div class="habit-info">
+        <h4>${h.name}</h4>
+        <small>${h.aspect} · dificultad ${h.difficulty}</small>
       </div>
-    `).join("")}
-  `;
+      <div class="habit-actions">
+        <button class="done" onclick="markHabit('${h.id}', true)">✔</button>
+        <button class="fail" onclick="markHabit('${h.id}', false)">✖</button>
+        <button class="delete" onclick="deleteHabit('${h.id}')">🗑</button>
+      </div>
+    `;
+    el.appendChild(div);
+  });
+}
+
+function renderAspects() {
+  const el = document.getElementById("aspectList");
+  if (!el) return;
+  el.innerHTML = "";
+
+  game.aspects.forEach(a => {
+    const div = document.createElement("div");
+    div.className = "aspect";
+    div.innerHTML = `
+      <strong>${a.name}</strong>
+      <div class="aspect-xp-bar">
+        <div class="aspect-xp" style="width:${Math.min(100, a.xp / 5)}%"></div>
+      </div>
+      <div class="aspect-actions">
+        <button onclick="deleteAspect('${a.id}')">🗑</button>
+      </div>
+    `;
+    el.appendChild(div);
+  });
 }
 
 function renderAchievements() {
-  app.innerHTML = `
-    <h2>Logros</h2>
-    ${achievements.map(a => {
-      if (a.hidden && !gameData.achievements[a.id]) return "";
-      return `
-        <div class="achievement">
-          <strong>${a.title}</strong>
-          ${gameData.achievements[a.id] && !gameData.claimedAchievements.includes(a.id)
-            ? `<button onclick="claimAchievement('${a.id}')">Reclamar</button>`
-            : gameData.claimedAchievements.includes(a.id)
-              ? "<span>Completado</span>"
-              : "<span>Bloqueado</span>"
-          }
-        </div>
-      `;
-    }).join("")}
-  `;
+  const el = document.getElementById("achievementList");
+  if (!el) return;
+  el.innerHTML = "";
+
+  achievements.forEach(a => {
+    const unlocked = game.achievements[a.id];
+    if (a.hidden && !unlocked) {
+      el.innerHTML += `<div class="achievement locked">🔒 Logro oculto</div>`;
+      return;
+    }
+
+    const claimed = game.claimedAchievements.includes(a.id);
+
+    el.innerHTML += `
+      <div class="achievement ${claimed ? "claimed" : ""}">
+        🏆 ${a.id}
+        ${unlocked && !claimed ? `<button class="claim" onclick="claimAchievement('${a.id}')">Reclamar</button>` : ""}
+      </div>
+    `;
+  });
 }
 
-/* ---------- RENDER GENERAL ---------- */
+/* ---------- ANIMACIÓN ---------- */
 
-function render() {
-  window.app = document.getElementById("app");
-  document.getElementById("life").innerText = gameData.life;
-  document.getElementById("coins").innerText = gameData.coins;
-
-  if (activeTab === "home") renderHome();
-  if (activeTab === "character") renderCharacter();
-  if (activeTab === "aspects") renderAspects();
-  if (activeTab === "shop") renderShop();
-  if (activeTab === "achievements") renderAchievements();
+function playPermissionAnimation() {
+  const el = document.getElementById("permissionAnimation");
+  if (!el) return;
+  el.classList.remove("hidden");
+  setTimeout(() => el.classList.add("hidden"), 900);
 }
 
 /* ---------- INIT ---------- */
